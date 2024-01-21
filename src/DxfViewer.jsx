@@ -1,11 +1,15 @@
 import { useEffect, useRef } from "react";
 import * as THREE from 'three';
 
-export default function DxfViewer() {
+export default function DxfViewer({width, height, clearColor}) {
 
     const hostCanvas = useRef();
 
     useEffect(() => {
+        width = width || 200;
+        height = height || 200;
+        clearColor = clearColor || 0;
+
         const camera = new THREE.OrthographicCamera(-100, 100, 100, -100, 1, 1000);
         camera.position.set(0, 0, -10);
         camera.lookAt(0, 0, 0);
@@ -20,15 +24,15 @@ export default function DxfViewer() {
         scene.add(new THREE.Line(geom, new THREE.LineBasicMaterial({color: 0x00ff00})));
         
         const renderer = new THREE.WebGLRenderer();
-        renderer.setSize(500, 500);
-        renderer.setClearColor(0x000000, 1);
+        renderer.setSize(width, height);
+        renderer.setClearColor(clearColor, 1);
         renderer.setPixelRatio( window.devicePixelRatio );
         renderer.render(scene, camera);
         hostCanvas.current.appendChild(renderer.domElement);
     }, [])
 
     return (
-        <div ref={hostCanvas}>
+        <div ref={hostCanvas} width={width} height={height}>
             
         </div>
     );
