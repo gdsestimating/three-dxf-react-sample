@@ -1,38 +1,53 @@
 import { useEffect, useRef } from "react";
 import * as THREE from 'three';
+import { useOrbitControls, zoomToExtents, getExtents, DxfLoader } from 'three-dxf';
 
-export default function DxfViewer({width, height, clearColor}) {
+export default function DxfViewer({width, height, clearColor, dxf}) {
 
-    const hostCanvas = useRef();
+    const hostElement = useRef();
+
+    const rendererRef = useRef(new THREE.WebGLRenderer());
+    
+    const sceneRef = useRef(new THREE.Scene());
+
+    const cameraRef = useRef(new THREE.OrthographicCamera());
 
     useEffect(() => {
+        // Initialize the renderer and camera
         width = width || 200;
         height = height || 200;
         clearColor = clearColor || 0;
-
-        const camera = new THREE.OrthographicCamera(-100, 100, 100, -100, 1, 1000);
-        camera.position.set(0, 0, -10);
-        camera.lookAt(0, 0, 0);
-        const scene = new THREE.Scene();
-
-        var v1 = new THREE.Vector3(0,0,0);
-        var v2 = new THREE.Vector3(30,0,0);
-        var v3 = new THREE.Vector3(30,30,0);
-        var v4 = new THREE.Vector3(0,0,0);
-        var geom = new THREE.BufferGeometry().setFromPoints([v1,v2,v3,v4]);
-
-        scene.add(new THREE.Line(geom, new THREE.LineBasicMaterial({color: 0x00ff00})));
-        
-        const renderer = new THREE.WebGLRenderer();
+        let renderer = rendererRef.current;
+        let camera = cameraRef.current;
+        let scene = sceneRef.current;
         renderer.setSize(width, height);
         renderer.setClearColor(clearColor, 1);
         renderer.setPixelRatio( window.devicePixelRatio );
+        camera.position.set(0, 0, 10);
+        camera.lookAt(0, 0, 0);
         renderer.render(scene, camera);
-        hostCanvas.current.appendChild(renderer.domElement);
+        hostElement.current.appendChild(renderer.domElement);
     }, [])
 
+    useEffect(() => {
+        if (dxf) {
+            let renderer = rendererRef.current;
+            let camera = cameraRef.current;
+            let scene = sceneRef.current;
+            scene.clear();
+            new DxfLoader().load(dxf, (objects) => {
+                objects.forEach(obj => scene.add(obj));
+
+                const extents = getExtents(objects)
+                zoomToExtents(camera, extents, renderer.domElement.width / renderer.domElement.height);
+                useOrbitControls(camera, renderer.domElement, () => renderer.render(scene, camera));
+            })
+            
+        }
+    }, [dxf])
+
     return (
-        <div ref={hostCanvas} width={width} height={height}>
+        <div ref={hostElement} width={width} height={height}>
             
         </div>
     );
